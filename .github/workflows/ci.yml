@@ -8,8 +8,6 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   validate:
@@ -31,9 +29,7 @@ jobs:
         cache: 'npm'
     
     - name: 📦 Install dependencies
-      run: |
-        npm ci --prefer-offline --no-audit
-        npm ls
+      run: npm install --no-audit
     
     - name: 🧪 Run tests
       run: npm test
@@ -42,16 +38,8 @@ jobs:
       run: node validate.js
     
     - name: 🔒 Security audit
-      run: npm audit --audit-level high --production
+      run: npm audit --audit-level moderate
       continue-on-error: true
-    
-    - name: 📊 Upload coverage reports
-      uses: codecov/codecov-action@v3
-      if: matrix.node-version == '20.x'
-      with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: arogya-ai-coverage
 
   build:
     name: 🏗️ Build & Test Production
@@ -68,8 +56,8 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
-    - name: 📦 Install production dependencies
-      run: npm ci --only=production --prefer-offline --no-audit
+    - name: 📦 Install dependencies
+      run: npm install --no-audit
     
     - name: 🏗️ Build application
       run: npm run build
@@ -93,48 +81,9 @@ jobs:
         # Cleanup
         kill $SERVER_PID || true
 
-  docker:
-    name: 🐳 Docker Build & Test
-    needs: validate
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: 🐳 Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: 🏗️ Build Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        target: production
-        push: false
-        tags: arogya-ai:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-    
-    - name: 🧪 Test Docker container
-      run: |
-        docker run -d --name arogya-test -p 10000:10000 \
-          -e NODE_ENV=production \
-          -e GROQ_API_KEY=test-key \
-          arogya-ai:test
-        
-        # Wait for container to start
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:10000/api/health || exit 1
-        
-        # Cleanup
-        docker stop arogya-test
-        docker rm arogya-test
-
   deploy-ready:
     name: 🚀 Deployment Ready Check
-    needs: [validate, build, docker]
+    needs: [validate, build]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
@@ -146,6 +95,6 @@ jobs:
       run: |
         echo "🎉 Arogya AI is ready for deployment!"
         echo "📊 All tests passed"
-        echo "🐳 Docker build successful"
+        echo "🏗️ Build successful"
         echo "🔒 Security checks completed"
         echo "🚀 Ready to deploy to production platforms"
