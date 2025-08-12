@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "arogya-ai",
+  "version": "1.0.0",
+  "description": "Arogya AI - Early Diagnosis Health Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --max-old-space-size=512 server.js",
+    "dev": "nodemon --max-old-space-size=512 server.js",
+    "test": "npx jest --maxWorkers=2",
+    "build": "npm ci --only=production --no-optional --no-audit",
+    "lint": "eslint .",
+    "health": "curl http://localhost:10000/api/health || echo 'Server not running'",
+    "postinstall": "npm run build",
+    "prestart": "node validate.js",
+    "monitor": "node health-monitor.js",
+    "prod": "NODE_ENV=production npm start"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vicky-a1/arogya-chatbot-all-language.git"
+  },
+  "homepage": "https://github.com/vicky-a1/arogya-chatbot-all-language#readme",
+  "bugs": {
+    "url": "https://github.com/vicky-a1/arogya-chatbot-all-language/issues"
+  },
+  "keywords": [
+    "ai",
+    "healthcare",
+    "medical",
+    "diagnosis",
+    "chatbot",
+    "groq",
+    "perplexity",
+    "gemini",
+    "indian-healthcare",
+    "telemedicine"
+  ],
+  "author": "Vicky A1 <vicky.a1@example.com>",
+  "license": "MIT"
+}

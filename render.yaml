@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: arogya-ai
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: |
+      npm ci --only=production --no-optional --no-audit --prefer-offline
+      npm run build
+    startCommand: node --max-old-space-size=512 server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512
+      - key: PORT
+        value: 10000
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: arogya-ai-disk
+      size: 1GB
+      mountPath: /opt/render/project/src/logs

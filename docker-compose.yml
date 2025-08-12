@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  arogya-ai:
+    build: 
+      context: .
+      target: production
+    ports:
+      - "10000:10000"
+    environment:
+      - NODE_ENV=production
+      - PORT=10000
+      - NODE_OPTIONS=--max-old-space-size=512
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - logs-volume:/app/logs
+    networks:
+      - arogya-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  logs-volume:
+    driver: local
+
+networks:
+  arogya-network:
+    driver: bridge
