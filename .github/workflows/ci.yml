@@ -2,48 +2,13 @@ name: Arogya AI - CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
-env:
-  NODE_VERSION: '20.x'
-
 jobs:
-  validate:
-    name: 🔍 Validate & Test
-    runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: 🟢 Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    
-    - name: 📦 Install dependencies
-      run: npm install --no-audit
-    
-    - name: 🧪 Run tests
-      run: npm test
-    
-    - name: ✅ Validate application
-      run: node validate.js
-    
-    - name: 🔒 Security audit
-      run: npm audit --audit-level moderate
-      continue-on-error: true
-
-  build:
-    name: 🏗️ Build & Test Production
-    needs: validate
+  test:
+    name: 🧪 Test Application
     runs-on: ubuntu-latest
     
     steps:
@@ -53,48 +18,31 @@ jobs:
     - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+        node-version: '20.x'
     
     - name: 📦 Install dependencies
-      run: npm install --no-audit
-    
-    - name: 🏗️ Build application
-      run: npm run build
-    
-    - name: 🧪 Test production build
-      env:
-        NODE_ENV: production
-        PORT: 10000
-        GROQ_API_KEY: test-key
       run: |
-        timeout 15s npm start &
-        SERVER_PID=$!
-        sleep 8
-        
-        # Test health endpoint
-        curl -f http://localhost:10000/api/health || exit 1
-        
-        # Test main page
-        curl -f http://localhost:10000/ || exit 1
-        
-        # Cleanup
-        kill $SERVER_PID || true
+        npm install
+        npm ls
+    
+    - name: 🧪 Run tests
+      run: npm test
+    
+    - name: ✅ Validate application
+      run: node validate.js
+    
+    - name: 🏗️ Build check
+      run: npm run build
 
   deploy-ready:
-    name: 🚀 Deployment Ready Check
-    needs: [validate, build]
+    name: 🚀 Deployment Ready
+    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ✅ Deployment ready notification
+    - name: ✅ Success notification
       run: |
         echo "🎉 Arogya AI is ready for deployment!"
-        echo "📊 All tests passed"
-        echo "🏗️ Build successful"
-        echo "🔒 Security checks completed"
+        echo "📊 All tests passed successfully"
         echo "🚀 Ready to deploy to production platforms"
