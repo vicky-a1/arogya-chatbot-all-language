@@ -256,6 +256,9 @@ async function loadAPIKeys() {
 
 function initializeApp() {
     try {
+        // Initialize mobile-specific features
+        initializeMobileFeatures();
+        
         updateLanguageElements();
         showUserInfoSection();
 
@@ -267,18 +270,30 @@ function initializeApp() {
 
         if (messageInput) {
             messageInput.addEventListener('keypress', handleKeyPress);
+            // Add mobile-specific input handling
+            if (isMobileDevice()) {
+                messageInput.addEventListener('focus', handleMobileInputFocus);
+                messageInput.addEventListener('blur', handleMobileInputBlur);
+            }
         }
 
         if (sendButton) {
             sendButton.addEventListener('click', sendMessage);
+            // Add touch feedback for mobile
+            if (isMobileDevice()) {
+                sendButton.addEventListener('touchstart', addTouchFeedback);
+                sendButton.addEventListener('touchend', removeTouchFeedback);
+            }
         }
 
         if (languageSelect) {
             languageSelect.addEventListener('change', changeLanguage);
         }
 
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', handleKeyboardShortcuts);
+        // Add keyboard shortcuts (desktop only)
+        if (!isMobileDevice()) {
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
 
         // Add click outside modal to close
         if (reportModal) {
@@ -288,11 +303,153 @@ function initializeApp() {
                 }
             });
         }
+
+        // Mobile-specific optimizations
+        if (isMobileDevice()) {
+            optimizeForMobile();
+        }
+
     } catch (error) {
         // Handle errors silently in production
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.error('Error in initializeApp:', error);
         }
+    }
+}
+
+// Mobile device detection
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.innerWidth <= 768 && 'ontouchstart' in window);
+}
+
+// Initialize mobile-specific features
+function initializeMobileFeatures() {
+    if (!isMobileDevice()) return;
+
+    // Add mobile class to body
+    document.body.classList.add('mobile-device');
+
+    // Handle viewport changes for mobile keyboards
+    let initialViewportHeight = window.innerHeight;
+    
+    window.addEventListener('resize', function() {
+        const currentHeight = window.innerHeight;
+        const heightDifference = initialViewportHeight - currentHeight;
+        
+        // If height decreased significantly, keyboard is likely open
+        if (heightDifference > 150) {
+            document.body.classList.add('keyboard-open');
+        } else {
+            document.body.classList.remove('keyboard-open');
+        }
+    });
+
+    // Prevent zoom on input focus (iOS Safari)
+    const metaViewport = document.querySelector('meta[name="viewport"]');
+    if (metaViewport) {
+        metaViewport.setAttribute('content', 
+            'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+        );
+    }
+
+    // Add touch event listeners for better mobile interaction
+    document.addEventListener('touchstart', function() {}, { passive: true });
+    document.addEventListener('touchmove', function() {}, { passive: true });
+}
+
+// Mobile input focus handling
+function handleMobileInputFocus(event) {
+    const input = event.target;
+    
+    // Scroll input into view on mobile
+    setTimeout(() => {
+        input.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+        });
+    }, 300);
+
+    // Add focused class for mobile styling
+    input.closest('.chat-input-container')?.classList.add('input-focused');
+}
+
+// Mobile input blur handling
+function handleMobileInputBlur(event) {
+    const input = event.target;
+    input.closest('.chat-input-container')?.classList.remove('input-focused');
+}
+
+// Add touch feedback for buttons
+function addTouchFeedback(event) {
+    event.target.classList.add('touch-active');
+}
+
+function removeTouchFeedback(event) {
+    setTimeout(() => {
+        event.target.classList.remove('touch-active');
+    }, 150);
+}
+
+// Mobile-specific optimizations
+function optimizeForMobile() {
+    // Optimize chat scrolling for mobile
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        // Improve scroll performance
+        chatMessages.style.webkitOverflowScrolling = 'touch';
+        chatMessages.style.overscrollBehavior = 'contain';
+        
+        // Auto-scroll to bottom on new messages (mobile-friendly)
+        const observer = new MutationObserver(() => {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+        observer.observe(chatMessages, { childList: true });
+    }
+
+    // Optimize modal behavior for mobile
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.addEventListener('touchmove', function(e) {
+            // Prevent background scrolling when modal is open
+            if (e.target === modal) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    });
+
+    // Add mobile-specific button enhancements
+    const buttons = document.querySelectorAll('button, .action-btn, .save-info-btn');
+    buttons.forEach(button => {
+        // Add ripple effect for touch feedback
+        button.addEventListener('touchstart', function(e) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+
+    // Optimize language selector for mobile
+    const languageSelector = document.getElementById('language');
+    if (languageSelector) {
+        languageSelector.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        languageSelector.addEventListener('touchend', function() {
+            this.style.transform = 'scale(1)';
+        });
+    }
+
+    // Mobile-specific PDF generation optimization
+    if (window.jsPDF || window.jspdf) {
+        // Optimize PDF generation for mobile devices
+        console.log('PDF generation optimized for mobile');
     }
 }
 
